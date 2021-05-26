@@ -2,6 +2,7 @@ import cv2.cv2 as cv2
 from time import time
 import imutils
 import numpy as np
+from datetime import datetime
 from mp_predictor import MpipePredictor, get_updated_keypoints
 from visualization import visualize_keypoints
 from geometry import get_distance
@@ -65,7 +66,6 @@ def mp_pose_game(img, keypoints, shape, game_state=0, active_point=None, catch_p
     txt = ""
 
     if game_state == 0:
-        # color_start = (255, 0, 0)
         active_point = np.random.choice(KEYPOINTS_FOR_GAME)
         xx, yy = np.random.randint(0, w), np.random.randint(0, h)
         catch_point = (xx, yy)
@@ -113,8 +113,6 @@ def main():
 
     while cv2.waitKey(1) != 27 or success == GAMES_NUMBER:
         ret, frame = cam.read()
-        # cv2.namedWindow(WINDOW_NAME, cv2.WND_PROP_FULLSCREEN)
-        # cv2.setWindowProperty(WINDOW_NAME, cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
         frame = cv2.flip(frame, 1)
         frame_ = frame.copy()  # for final photo
         frame = imutils.resize(frame, width=scaled_width)
@@ -171,13 +169,18 @@ def main():
     color = (int(c1), int(c2), int(c3))
 
     final_photo = frame if WITH_SKELETON else frame_  # use clean frame if WITH_SKELETON == False
-    final_photo = cv2.circle(final_photo, cpoint, radius, color, -1, cv2.LINE_AA)
+    final_overlay = final_photo.copy()
+    final_overlay = cv2.circle(final_overlay, cpoint, radius, color, -1, cv2.LINE_AA)
+    final_photo = cv2.addWeighted(final_photo, .7, final_overlay, .3, 1)
     final_photo = draw_box_with_text(final_photo, txt, edge_color=frame_color, border=6)
 
     final_photo = improve_photo(final_photo)
 
     cv2.imshow(WINDOW_NAME, final_photo)
-    cv2.imwrite("tests/out.jpg", final_photo)
+    date_and_time = datetime.now().strftime("%d.%m.%Y_%H.%M")
+    img_name = f"result_{date_and_time}.jpg"
+    img_path = "gallery/" + img_name
+    cv2.imwrite(img_path, final_photo)
     cv2.waitKey(0)
 
     while cv2.waitKey(1) != 27:
